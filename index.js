@@ -16,11 +16,18 @@ async function run() {
     try {
         const serviceCollection = client.db('KidSpace').collection('services');
         const orderCollection = client.db("KidSpace").collection('Orders');
+        const reviewCollection = client.db("KidSpace").collection('reviews');
 
         app.get('/services', async (req, res) => {
             const query = {};
             const cursor = serviceCollection.find(query);
             const services = await cursor.toArray();
+            res.send(services);
+        })
+        app.get('/limitedServices', async (req, res) => {
+            const query = {};
+            const cursor = serviceCollection.find(query);
+            const services = await cursor.limit(3).toArray();
             res.send(services);
         })
 
@@ -36,6 +43,12 @@ async function run() {
         app.post('/orders', async (req, res) => {
             const order = req.body;
             const result = await orderCollection.insertOne(order);
+            res.send(result);
+
+        })
+        app.post('/reviews', async (req, res) => {
+            const order = req.body;
+            const result = await reviewCollection.insertOne(order);
             res.send(result);
 
         })
