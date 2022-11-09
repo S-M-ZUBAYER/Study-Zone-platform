@@ -13,6 +13,21 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.p2sr91x.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+function verifyJwtToken(req, res, next) {
+    const authenticHeader = req.headers.authorization;
+    if (!authenticHeader) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+
+    const token = authenticHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(401).send({ message: 'unauthorized access' })
+        }
+        req.decoded = decoded;
+        next();
+    })
+}
 async function run() {
     try {
         const serviceCollection = client.db('KidSpace').collection('services');
@@ -21,7 +36,7 @@ async function run() {
 
         app.post('/jwt', (req, res) => {
             const user = req.body;
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
             res.send({ token });
         })
 
@@ -53,7 +68,12 @@ async function run() {
         })
 
         // get specific data;
-        app.get('/myReviews', async (req, res) => {
+        app.get('/myReviews', verifyJwtToken, async (req, res) => {
+            const decoded = req.decoded;
+            console.log('inside', decoded)
+            if (decoded.email !== req.query.email) {
+                res.status(403).send({ message: 'forbidden access' })
+            }
             let query = {};
             if (req.query.email) {
                 query = {
@@ -67,7 +87,7 @@ async function run() {
 
         // order api section
 
-        app.post('/services', async (req, res) => {
+        app.post('/services', verifyJwtToken, async (req, res) => {
             const service = req.body;
             const result = await serviceCollection.insertOne(service);
             res.send(result);
@@ -84,6 +104,13 @@ async function run() {
             const result = await reviewCollection.insertOne(order);
             res.send(result);
 
+        })
+
+        app.delete('/myReviews/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await reviewCollection.deleteOne(query);
+            res.send(result);
         })
 
 
