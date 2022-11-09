@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 require('dotenv').config();
@@ -17,6 +18,12 @@ async function run() {
         const serviceCollection = client.db('KidSpace').collection('services');
         const orderCollection = client.db("KidSpace").collection('Orders');
         const reviewCollection = client.db("KidSpace").collection('reviews');
+
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
+            res.send({ token });
+        })
 
         app.get('/services', async (req, res) => {
             const query = {};
@@ -45,6 +52,19 @@ async function run() {
             res.send(services);
         })
 
+        // get specific data;
+        app.get('/myReviews', async (req, res) => {
+            let query = {};
+            if (req.query.email) {
+                query = {
+                    email: req.query.email
+                }
+            }
+            const cursor = reviewCollection.find(query);
+            const reviews = await cursor.toArray();
+            res.send(reviews);
+        })
+
         // order api section
 
         app.post('/services', async (req, res) => {
@@ -65,6 +85,7 @@ async function run() {
             res.send(result);
 
         })
+
 
 
     }
