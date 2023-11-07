@@ -14,21 +14,21 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@clu
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 //create a function for jwt token
-function verifyJwtToken(req, res, next) {
-    const authenticHeader = req.headers.authorization;
-    if (!authenticHeader) {
-        return res.status(401).send({ message: 'unauthorized access' })
-    }
+// function verifyJwtToken(req, res, next) {
+//     const authenticHeader = req.headers.authorization;
+//     if (!authenticHeader) {
+//         return res.status(401).send({ message: 'unauthorized access' })
+//     }
 
-    const token = authenticHeader.split(' ')[1];
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
-        if (err) {
-            return res.status(401).send({ message: 'unauthorized access' })
-        }
-        req.decoded = decoded;
-        next();
-    })
-}
+//     const token = authenticHeader.split(' ')[1];
+//     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+//         if (err) {
+//             return res.status(401).send({ message: 'unauthorized access' })
+//         }
+//         req.decoded = decoded;
+//         next();
+//     })
+// }
 async function run() {
     try {
         const serviceCollection = client.db('KidSpace').collection('services');
@@ -69,7 +69,8 @@ async function run() {
         })
 
         // get specific data;
-        app.get('/myReviews', verifyJwtToken, async (req, res) => {
+        // app.get('/myReviews', verifyJwtToken, async (req, res) => {
+        app.get('/myReviews', async (req, res) => {
             const decoded = req.decoded;
             console.log('inside', decoded)
             if (decoded.email !== req.query.email) {
@@ -88,7 +89,8 @@ async function run() {
 
         // order api section
 
-        app.post('/services', verifyJwtToken, async (req, res) => {
+        // app.post('/services', verifyJwtToken, async (req, res) => {
+        app.post('/services', async (req, res) => {
             const service = req.body;
             const result = await serviceCollection.insertOne(service);
             res.send(result);
